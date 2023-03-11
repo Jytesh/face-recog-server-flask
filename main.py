@@ -1,6 +1,6 @@
 from flask import Flask, g, jsonify, request
 import sqlite3
-from face_recognition import face_encodings, compare_faces
+from face_recognition import face_encodings, compare_faces, load_image_file
 
 DATABASE = 'database.db'
 
@@ -41,10 +41,11 @@ def verify():
     print(request.files['file'])
     img = user[3]
     user_img = request.files['file'].read()
-    open(f'user_img_{user[1]}.jpg', 'wb').write(user_img)
-    open(f'img_{user[1]}.jpg', 'wb').write(img)
-    user_img_encoding = face_encodings(user_img)[0]
-    img_encoding = face_encodings(img)[0]
+    open(f'user_img_{user[0]}.jpg', 'wb').write(user_img)
+    open(f'img_{user[0]}.jpg', 'wb').write(img)
+    
+    user_img_encoding = face_encodings(load_image_file(f'user_img_{user[0]}.jpg'))[0]
+    img_encoding = face_encodings(load_image_file(f'img_{user[0]}.jpg'))[0]
 
     print('wtf')
     if compare_faces([img_encoding], user_img_encoding)[0]:
@@ -60,4 +61,5 @@ def close_connection(exception):
         db.close()
 
 
-app.run()
+if __name__ == '__main__':
+    app.run(debug=True)
