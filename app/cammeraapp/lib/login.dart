@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:location/location.dart';
 import 'camera_screen.dart';
+import 'package:http/http.dart' as http;
 
 class LoginInScreen extends StatefulWidget {
   const LoginInScreen({super.key});
@@ -56,6 +57,17 @@ class _MyWidgetState extends State<LoginInScreen> {
                 ),
                 ElevatedButton(
                   onPressed: () {
+                    var map = <String, dynamic>{};
+                    map['username'] = _username.text;
+                    map['password'] = _password.text;
+
+                    http
+                        .post(
+                          Uri.parse('http://localhost:5000/verify'),
+                          body: map,
+                        )
+                        .then(print);
+
                     if (_username.text == 'abc' && _password.text == 'abc') {
                       Navigator.push(
                         context,

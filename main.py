@@ -16,6 +16,7 @@ def get_db():
 
 @app.route('/login', methods=['POST'])
 def login():
+    print(request.body)
     db = get_db()
     cur = db.cursor()
     cur.execute("SELECT * FROM users WHERE username = ? AND password = ?",
@@ -31,8 +32,7 @@ def login():
 def verify():
     db = get_db()
     cur = db.cursor()
-    cur.execute("SELECT * FROM users WHERE token = ?",
-                (request.headers.get('Token'), ))
+    cur.execute("SELECT * FROM users WHERE token = '|n/>JOGt]5,:P4Bd?RO2Ep%'") # , (request.form['token']))
     user = cur.fetchone()
     print(user[0])
     if user is None:

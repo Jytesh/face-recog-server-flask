@@ -8,6 +8,8 @@ import 'package:timer_builder/timer_builder.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:gallery_saver/gallery_saver.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 
 class CameraScreen extends StatefulWidget {
   const CameraScreen({super.key});
@@ -19,7 +21,7 @@ class CameraScreen extends StatefulWidget {
 class _CameraScreenState extends State<CameraScreen> {
   late CameraController _controller;
   late Timer _timer;
-  int _countdown = 8;
+  int _countdown = 5;
   late BuildContext _context;
 
   @override
@@ -40,7 +42,7 @@ class _CameraScreenState extends State<CameraScreen> {
 
     // Get available cameras
     List<CameraDescription> cameras = await availableCameras();
-    CameraDescription firstCamera = cameras.first;
+    CameraDescription firstCamera = cameras.last;
 
     // Create a CameraController instance
     _controller = CameraController(
@@ -56,9 +58,6 @@ class _CameraScreenState extends State<CameraScreen> {
       return;
     }
     setState(() {});
-
-    // Start the countdown timer when the camera preview is ready
-    _startCountdown();
   }
 
   @override
@@ -66,31 +65,6 @@ class _CameraScreenState extends State<CameraScreen> {
     // Dispose of the camera controller when the widget is disposed
     _controller.dispose();
     super.dispose();
-  }
-
-  void _startCountdown() {
-    // Start a timer that counts down from 8 seconds
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      setState(() {
-        _countdown -= 1;
-      });
-
-      // When the countdown reaches 0, take a photo and cancel the timer
-      if (_countdown == 0) {
-        _controller.takePicture().then((XFile file) async {
-          // Save the file to the device's gallery
-          final path = (await getTemporaryDirectory()).path;
-          final fileName = DateTime.now().toString();
-          final newPath = '$path/$fileName.jpg';
-          await file.saveTo(newPath);
-          final result = await GallerySaver.saveImage(newPath);
-          // print('Image saved to gallery: $result');
-          // Exit the camera screen
-          // Navigator.of(context).pop();
-        });
-        timer.cancel();
-      }
-    });
   }
 
   @override
@@ -112,19 +86,34 @@ class _CameraScreenState extends State<CameraScreen> {
                     : Container(),
               ),
               // Countdown timer
-              TimerBuilder.periodic(const Duration(seconds: 1),
-                  builder: (context) {
-                if (_countdown == 0) {
-                  return Container();
-                } else {
-                  return Center(
-                    child: Text(
-                      '$_countdown',
-                      style: const TextStyle(fontSize: 64),
-                    ),
-                  );
-                }
-              }),
+              FloatingActionButton(
+                onPressed: () => {
+                  _controller.takePicture().then((XFile file) async {
+                    // Save the file to the device's gallery
+                    final path = (await getTemporaryDirectory()).path;
+                    final fileName = DateTime.now().toString();
+                    final newPath = '$path/$fileName.jpg';
+                    await file.saveTo(newPath);
+                    final result = await GallerySaver.saveImage(newPath);
+
+                    var request =
+                        http.MultipartRequest("POST", Uri.parse("MY_API_URL"));
+                    var multipartFile = await http.MultipartFile.fromPath(
+                        "image", newPath,
+                        contentType: MediaType('image', 'jpeg'));
+                    request.files.add(multipartFile);
+
+                    var response = await request.send();
+                    if (response.statusCode == 200) {
+                      print("Image uploaded");
+                    } else {
+                      print("Image not uploaded");
+                    }
+                    // Exit the camera screen
+                    // Navigator.of(context).pop();
+                  })
+                },
+              )
             ],
           ),
         ),
